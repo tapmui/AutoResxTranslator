@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 using AutoResxTranslator.Definitions;
@@ -306,165 +305,15 @@ namespace AutoResxTranslator
 					pos += 1;
 					progress.BeginInvoke(max, pos, status, fileName, null, null);
 					var targetDir = Path.GetDirectoryName(file);
-					// TranslateResxFilesAsync(file, sourceLng, translationOptions, desLanguages, targetDir, progress);
 					TranslateResxFilesListAsync(file, sourceLng, translationOptions, desLanguages, targetDir, progress);
 				}
 			}
 			else
 			{
-				TranslateResxFilesAsync(sourceResx, sourceLng, translationOptions, desLanguages, destDir, progress);
+				TranslateResxFilesListAsync(sourceResx, sourceLng, translationOptions, desLanguages, destDir, progress);
 			}
-
 		}
 
-		void TranslateResxFilesAsync(
-		string sourceResx,
-		string sourceLng,
-		TranslationOptions translationOptions,
-		List<string> desLanguages, string destDir,
-		ResxProgressCallback progress)
-		{
-			int max = 0;
-			int pos = 0;
-			int trycount = 0;
-			string status = "";
-			bool hasErrors = false;
-
-			var sourceResxFilename = ReadLanguageFilename(sourceResx);
-			var errorLogFilename = sourceResxFilename + ".errors.log";
-			var errorLogFile = Path.Combine(destDir, errorLogFilename);
-
-			foreach (var destLng in desLanguages)
-			{
-				var fileName = Path.GetFileName(sourceResx);
-				var destFile = Path.Combine(destDir, sourceResxFilename + "." + destLng + ".resx");
-				var doc = new XmlDocument();
-				doc.Load(sourceResx);
-				var dataList = ResxFileOperations.ReadResxData(doc);
-				max = dataList.Count;
-
-				pos = 0;
-				status = "Translating language: " + destLng;
-				progress.BeginInvoke(max, pos, fileName, status, null, null);
-
-				try
-				{
-
-					foreach (var node in dataList)
-					{
-						status = "Translating language: " + destLng;
-						pos += 1;
-						progress.BeginInvoke(max, pos, fileName, status, null, null);
-
-
-						var valueNode = ResxFileOperations.GetDataValueNode(node);
-						if (valueNode == null) continue;
-
-						var orgText = valueNode.InnerText;
-						if (string.IsNullOrWhiteSpace(orgText))
-							continue;
-
-
-						if (translationOptions.ServiceType == ServiceTypeEnum.Google)
-						{
-							// There is no longer a key to validate
-							// the key
-							var textTranslatorUrlKey = "";
-
-							string translated = string.Empty;
-							bool success = false;
-							trycount = 0;
-							int maxtryCount = 2;
-							do
-							{
-								try
-								{
-									success = GTranslateServiceV2.Translate(orgText, sourceLng, destLng, textTranslatorUrlKey, out translated);
-								}
-								catch (Exception e)
-								{
-									Console.WriteLine("error:", e);
-									status = "Error: " + e.Message;
-									progress.BeginInvoke(max, pos, fileName, status, null, null);
-									success = false;
-									trycount = maxtryCount;
-									throw;
-								}
-								trycount++;
-
-								if (!success)
-								{
-									var key = ResxFileOperations.GetDataKeyName(node);
-									status = "Translating language: " + destLng + " , key '" + key + "' failed to translate in try " + trycount;
-									progress.BeginInvoke(max, pos, fileName, status, null, null);
-								}
-
-							} while (success == false && trycount <= maxtryCount);
-
-							if (success)
-							{
-								valueNode.InnerText = translated;
-							}
-							else
-							{
-								hasErrors = true;
-								var key = ResxFileOperations.GetDataKeyName(node);
-								try
-								{
-									string message = "\r\nKey '" + key + "' translation to language '" + destLng + "' failed.";
-									File.AppendAllText(errorLogFile, message);
-								}
-								catch
-								{
-								}
-							}
-						}
-						else if (translationOptions.ServiceType == ServiceTypeEnum.Microsoft)
-						{
-							var translationResult = MsTranslateService.TranslateAsync(orgText, sourceLng, destLng,
-								translationOptions.MsSubscriptionKey, translationOptions.MsSubscriptionRegion).Result;
-
-							if (translationResult.Success)
-							{
-								valueNode.InnerText = translationResult.Result;
-							}
-							else
-							{
-								hasErrors = true;
-								var key = ResxFileOperations.GetDataKeyName(node);
-								try
-								{
-									string message = "\r\nKey '" + key + "' translation to language '" + destLng + "' failed. ";
-									if (!string.IsNullOrEmpty(translationResult.Result))
-										message += " Error message: " + translationResult.Result;
-
-									File.AppendAllText(errorLogFile, message);
-								}
-								catch { }
-							}
-						}
-					}
-				}
-				finally
-				{
-					// now save that shit!
-					doc.Save(destFile);
-				}
-			}
-
-			if (hasErrors)
-			{
-				status = "Translation finished. Errors are logged in to '" + errorLogFilename + "'.";
-			}
-			else
-			{
-				status = "Translation finished.";
-			}
-
-
-			progress.BeginInvoke(max, pos, null, status, null, null);
-
-		}
 
 		void TranslateResxFilesListAsync(
 			string sourceResx,
@@ -522,7 +371,6 @@ namespace AutoResxTranslator
 				}
 				finally
 				{
-					// now save that shit!
 					doc.Save(destFile);
 				}
 			}
@@ -749,28 +597,6 @@ namespace AutoResxTranslator
 		private void btnStartResxTranslate_Click(object sender, EventArgs e)
 		{
 			translateAFile(txtSourceResx.Text);
-			//if (string.IsNullOrEmpty(txtSourceResx.Text) 
-			//	&& !string.IsNullOrEmpty(sourceDir.Text)
-			//	&& cmbSourceResxLng.SelectedIndex != -1
-			//	)
-			//{
-			//	var srcLng = "." + ((KeyValuePair<string, string>)cmbSourceResxLng.SelectedItem).Key + ".";
-			//	List<string> files = Directory.GetFiles(sourceDir.Text).Where(x => x.Contains(srcLng)).ToList();
-			//	foreach(var file in files)
-			//	{
-			//		txtSourceResx.Text = file;
-			//		translateAFile(file);
-			//		while (!tabMain.Enabled)
-			//		{
-			//			if (!tabMain.Enabled)
-			//				Thread.Sleep(1000);
-			//		}
-			//	}
-			//}
-			//else
-			//{
-			//	translateAFile(txtSourceResx.Text);
-			//}
 		}
 
 		private void translateAFile(string fileNmae)
