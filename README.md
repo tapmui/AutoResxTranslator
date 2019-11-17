@@ -17,11 +17,15 @@ Text translation
 Resx Translation
 ------
 ![ResX-Translation](/Wiki/Images/resx-translation.png?raw=true)
+
 Please look the picture “Resx Translation” picture. It shows an example with Skoruba identity Admin folder.
+
 Instructions:
-Idea is that one selects original language [sourceLang, and source directory from where to start translation.
-With parse all files checkbox you do not  define source file. Gool finds all files matching with pattern “.[sourceLang].resx”, including sub-directories.
+Idea is that one selects original language [sourceLang], and source directory from where to start translation.
+With parse all files checkbox you do not  define source file. 
+Tool finds all files matching with pattern “.[sourceLang].resx”, including sub-directories.
 You need to select language(s) to which you want to translate.
+
 Results are generated in the directory of source file.
 
 
