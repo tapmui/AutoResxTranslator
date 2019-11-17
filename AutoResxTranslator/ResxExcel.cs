@@ -127,6 +127,7 @@ namespace AutoResxTranslator
 			}
 			catch (Exception ex)
 			{
+				Console.WriteLine("GetExcelSheetNames error:", ex);
 				return null;
 			}
 			finally

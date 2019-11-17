@@ -45,6 +45,7 @@
 			this.panel2 = new System.Windows.Forms.Panel();
 			this.label3 = new System.Windows.Forms.Label();
 			this.tabResx = new System.Windows.Forms.TabPage();
+			this.subDirectoriesIncluded = new System.Windows.Forms.CheckBox();
 			this.lstResxLanguages = new System.Windows.Forms.ListView();
 			this.lblResxTranslateStatus = new System.Windows.Forms.Label();
 			this.btnStartResxTranslate = new System.Windows.Forms.Button();
@@ -78,6 +79,8 @@
 			this.webBrowser = new System.Windows.Forms.WebBrowser();
 			this.tabPage3 = new System.Windows.Forms.TabPage();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
+			this.googleApiKey = new System.Windows.Forms.TextBox();
+			this.label14 = new System.Windows.Forms.Label();
 			this.txtMsTranslationRegion = new System.Windows.Forms.TextBox();
 			this.label13 = new System.Windows.Forms.Label();
 			this.txtMsTranslationKey = new System.Windows.Forms.TextBox();
@@ -104,8 +107,8 @@
 			// tabMain
 			// 
 			this.tabMain.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-			| System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.tabMain.Controls.Add(this.tabPage2);
 			this.tabMain.Controls.Add(this.tabResx);
 			this.tabMain.Controls.Add(this.tabPage1);
@@ -252,6 +255,7 @@
 			// 
 			// tabResx
 			// 
+			this.tabResx.Controls.Add(this.subDirectoriesIncluded);
 			this.tabResx.Controls.Add(this.lstResxLanguages);
 			this.tabResx.Controls.Add(this.lblResxTranslateStatus);
 			this.tabResx.Controls.Add(this.btnStartResxTranslate);
@@ -272,19 +276,31 @@
 			this.tabResx.Text = "ResX Translator";
 			this.tabResx.UseVisualStyleBackColor = true;
 			// 
+			// subDirectoriesIncluded
+			// 
+			this.subDirectoriesIncluded.AutoSize = true;
+			this.subDirectoriesIncluded.Location = new System.Drawing.Point(20, 42);
+			this.subDirectoriesIncluded.Name = "subDirectoriesIncluded";
+			this.subDirectoriesIncluded.RightToLeft = System.Windows.Forms.RightToLeft.No;
+			this.subDirectoriesIncluded.Size = new System.Drawing.Size(240, 17);
+			this.subDirectoriesIncluded.TabIndex = 13;
+			this.subDirectoriesIncluded.Text = "Parse all files incl. subdirectories from output";
+			this.subDirectoriesIncluded.UseVisualStyleBackColor = true;
+			this.subDirectoriesIncluded.CheckedChanged += new System.EventHandler(this.subDirectoriesIncluded_Click);
+			// 
 			// lstResxLanguages
 			// 
 			this.lstResxLanguages.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-			| System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.lstResxLanguages.CheckBoxes = true;
 			this.lstResxLanguages.HideSelection = false;
 			listViewItem1.StateImageIndex = 0;
 			listViewItem2.StateImageIndex = 0;
 			this.lstResxLanguages.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-			listViewItem1,
-			listViewItem2});
-			this.lstResxLanguages.Location = new System.Drawing.Point(113, 71);
+            listViewItem1,
+            listViewItem2});
+			this.lstResxLanguages.Location = new System.Drawing.Point(113, 86);
 			this.lstResxLanguages.Name = "lstResxLanguages";
 			this.lstResxLanguages.Size = new System.Drawing.Size(424, 182);
 			this.lstResxLanguages.TabIndex = 12;
@@ -294,18 +310,18 @@
 			// lblResxTranslateStatus
 			// 
 			this.lblResxTranslateStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.lblResxTranslateStatus.AutoEllipsis = true;
 			this.lblResxTranslateStatus.ForeColor = System.Drawing.Color.Black;
-			this.lblResxTranslateStatus.Location = new System.Drawing.Point(113, 289);
+			this.lblResxTranslateStatus.Location = new System.Drawing.Point(113, 304);
 			this.lblResxTranslateStatus.Name = "lblResxTranslateStatus";
-			this.lblResxTranslateStatus.Size = new System.Drawing.Size(505, 54);
+			this.lblResxTranslateStatus.Size = new System.Drawing.Size(505, 39);
 			this.lblResxTranslateStatus.TabIndex = 11;
 			// 
 			// btnStartResxTranslate
 			// 
 			this.btnStartResxTranslate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.btnStartResxTranslate.Location = new System.Drawing.Point(544, 259);
+			this.btnStartResxTranslate.Location = new System.Drawing.Point(544, 274);
 			this.btnStartResxTranslate.Name = "btnStartResxTranslate";
 			this.btnStartResxTranslate.Size = new System.Drawing.Size(75, 23);
 			this.btnStartResxTranslate.TabIndex = 10;
@@ -316,8 +332,8 @@
 			// barResxProgress
 			// 
 			this.barResxProgress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
-			this.barResxProgress.Location = new System.Drawing.Point(113, 259);
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.barResxProgress.Location = new System.Drawing.Point(113, 274);
 			this.barResxProgress.Name = "barResxProgress";
 			this.barResxProgress.Size = new System.Drawing.Size(424, 23);
 			this.barResxProgress.TabIndex = 9;
@@ -325,7 +341,7 @@
 			// label6
 			// 
 			this.label6.AutoSize = true;
-			this.label6.Location = new System.Drawing.Point(7, 73);
+			this.label6.Location = new System.Drawing.Point(7, 88);
 			this.label6.Name = "label6";
 			this.label6.Size = new System.Drawing.Size(100, 13);
 			this.label6.TabIndex = 8;
@@ -334,7 +350,7 @@
 			// btnSelectOutputDir
 			// 
 			this.btnSelectOutputDir.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.btnSelectOutputDir.Location = new System.Drawing.Point(543, 42);
+			this.btnSelectOutputDir.Location = new System.Drawing.Point(543, 57);
 			this.btnSelectOutputDir.Name = "btnSelectOutputDir";
 			this.btnSelectOutputDir.Size = new System.Drawing.Size(75, 23);
 			this.btnSelectOutputDir.TabIndex = 6;
@@ -345,8 +361,8 @@
 			// txtOutputDir
 			// 
 			this.txtOutputDir.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
-			this.txtOutputDir.Location = new System.Drawing.Point(113, 44);
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.txtOutputDir.Location = new System.Drawing.Point(113, 59);
 			this.txtOutputDir.Name = "txtOutputDir";
 			this.txtOutputDir.Size = new System.Drawing.Size(424, 21);
 			this.txtOutputDir.TabIndex = 5;
@@ -354,7 +370,7 @@
 			// label5
 			// 
 			this.label5.AutoSize = true;
-			this.label5.Location = new System.Drawing.Point(15, 47);
+			this.label5.Location = new System.Drawing.Point(15, 62);
 			this.label5.Name = "label5";
 			this.label5.Size = new System.Drawing.Size(92, 13);
 			this.label5.TabIndex = 4;
@@ -385,7 +401,7 @@
 			// txtSourceResx
 			// 
 			this.txtSourceResx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.txtSourceResx.Location = new System.Drawing.Point(113, 17);
 			this.txtSourceResx.Name = "txtSourceResx";
 			this.txtSourceResx.ReadOnly = true;
@@ -472,7 +488,7 @@
 			// txtExcelFile
 			// 
 			this.txtExcelFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.txtExcelFile.Location = new System.Drawing.Point(107, 20);
 			this.txtExcelFile.Name = "txtExcelFile";
 			this.txtExcelFile.Size = new System.Drawing.Size(424, 21);
@@ -567,7 +583,7 @@
 			// txtExcelResx
 			// 
 			this.txtExcelResx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.txtExcelResx.Location = new System.Drawing.Point(113, 17);
 			this.txtExcelResx.Name = "txtExcelResx";
 			this.txtExcelResx.ReadOnly = true;
@@ -602,6 +618,7 @@
 			this.webBrowser.Location = new System.Drawing.Point(3, 3);
 			this.webBrowser.MinimumSize = new System.Drawing.Size(20, 20);
 			this.webBrowser.Name = "webBrowser";
+			this.webBrowser.ScriptErrorsSuppressed = true;
 			this.webBrowser.Size = new System.Drawing.Size(636, 340);
 			this.webBrowser.TabIndex = 0;
 			this.webBrowser.Url = new System.Uri("https://translate.google.com/", System.UriKind.Absolute);
@@ -615,13 +632,15 @@
 			this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
 			this.tabPage3.Size = new System.Drawing.Size(642, 346);
 			this.tabPage3.TabIndex = 5;
-			this.tabPage3.Text = "Translate Service";
+			this.tabPage3.Text = "Translate settings";
 			this.tabPage3.UseVisualStyleBackColor = true;
 			// 
 			// groupBox2
 			// 
 			this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-			| System.Windows.Forms.AnchorStyles.Right)));
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.groupBox2.Controls.Add(this.googleApiKey);
+			this.groupBox2.Controls.Add(this.label14);
 			this.groupBox2.Controls.Add(this.txtMsTranslationRegion);
 			this.groupBox2.Controls.Add(this.label13);
 			this.groupBox2.Controls.Add(this.txtMsTranslationKey);
@@ -630,15 +649,32 @@
 			this.groupBox2.Controls.Add(this.rbtnMsTranslateService);
 			this.groupBox2.Location = new System.Drawing.Point(6, 6);
 			this.groupBox2.Name = "groupBox2";
-			this.groupBox2.Size = new System.Drawing.Size(630, 112);
+			this.groupBox2.Size = new System.Drawing.Size(630, 198);
 			this.groupBox2.TabIndex = 0;
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Translate Service Selection";
 			// 
+			// googleApiKey
+			// 
+			this.googleApiKey.Location = new System.Drawing.Point(103, 43);
+			this.googleApiKey.Name = "googleApiKey";
+			this.googleApiKey.Size = new System.Drawing.Size(200, 21);
+			this.googleApiKey.TabIndex = 7;
+			this.googleApiKey.TextChanged += new System.EventHandler(this.googleApiKey_TextChanged);
+			// 
+			// label14
+			// 
+			this.label14.AutoSize = true;
+			this.label14.Location = new System.Drawing.Point(7, 46);
+			this.label14.Name = "label14";
+			this.label14.Size = new System.Drawing.Size(78, 13);
+			this.label14.TabIndex = 6;
+			this.label14.Text = "Google apikey:";
+			// 
 			// txtMsTranslationRegion
 			// 
 			this.txtMsTranslationRegion.Enabled = false;
-			this.txtMsTranslationRegion.Location = new System.Drawing.Point(369, 71);
+			this.txtMsTranslationRegion.Location = new System.Drawing.Point(369, 120);
 			this.txtMsTranslationRegion.Name = "txtMsTranslationRegion";
 			this.txtMsTranslationRegion.Size = new System.Drawing.Size(100, 21);
 			this.txtMsTranslationRegion.TabIndex = 5;
@@ -646,7 +682,7 @@
 			// label13
 			// 
 			this.label13.AutoSize = true;
-			this.label13.Location = new System.Drawing.Point(319, 74);
+			this.label13.Location = new System.Drawing.Point(319, 123);
 			this.label13.Name = "label13";
 			this.label13.Size = new System.Drawing.Size(44, 13);
 			this.label13.TabIndex = 4;
@@ -655,7 +691,7 @@
 			// txtMsTranslationKey
 			// 
 			this.txtMsTranslationKey.Enabled = false;
-			this.txtMsTranslationKey.Location = new System.Drawing.Point(103, 71);
+			this.txtMsTranslationKey.Location = new System.Drawing.Point(103, 120);
 			this.txtMsTranslationKey.Name = "txtMsTranslationKey";
 			this.txtMsTranslationKey.Size = new System.Drawing.Size(200, 21);
 			this.txtMsTranslationKey.TabIndex = 3;
@@ -663,7 +699,7 @@
 			// label12
 			// 
 			this.label12.AutoSize = true;
-			this.label12.Location = new System.Drawing.Point(7, 74);
+			this.label12.Location = new System.Drawing.Point(7, 123);
 			this.label12.Name = "label12";
 			this.label12.Size = new System.Drawing.Size(90, 13);
 			this.label12.TabIndex = 2;
@@ -684,7 +720,7 @@
 			// rbtnMsTranslateService
 			// 
 			this.rbtnMsTranslateService.AutoSize = true;
-			this.rbtnMsTranslateService.Location = new System.Drawing.Point(6, 43);
+			this.rbtnMsTranslateService.Location = new System.Drawing.Point(6, 92);
 			this.rbtnMsTranslateService.Name = "rbtnMsTranslateService";
 			this.rbtnMsTranslateService.Size = new System.Drawing.Size(216, 17);
 			this.rbtnMsTranslateService.TabIndex = 0;
@@ -801,6 +837,9 @@
 		private System.Windows.Forms.TextBox txtMsTranslationRegion;
 		private System.Windows.Forms.Label label13;
 		private System.Windows.Forms.TextBox txtMsTranslationKey;
+		private System.Windows.Forms.CheckBox subDirectoriesIncluded;
+		private System.Windows.Forms.TextBox googleApiKey;
+		private System.Windows.Forms.Label label14;
 	}
 }
 

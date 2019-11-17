@@ -20,12 +20,14 @@ using AutoResxTranslator.Definitions;
 
 namespace AutoResxTranslator
 {
+	
 	public partial class frmMain : Form
 	{
 		public frmMain()
 		{
 			InitializeComponent();
 		}
+		private const string defaultLangugae = "en";
 
 		private readonly Dictionary<string, string> _languages =
 			new Dictionary<string, string>
@@ -119,17 +121,27 @@ namespace AutoResxTranslator
 			cmbDesc.ValueMember = "Key";
 			lstResxLanguages.Items.Clear();
 
-			foreach (var k in _languages)
+			for (int index = 0; index < _languages.Count; index++)
 			{
-				cmbSrc.Items.Add(k);
-				if (k.Key == "auto")
+				var item = _languages.ElementAt(index);
+				cmbSrc.Items.Add(item);
+				if (item.Key == "auto")
 					continue;
-				cmbDesc.Items.Add(k);
-				cmbSourceResxLng.Items.Add(k);
-				lstResxLanguages.Items.Add(k.Key, k.Value, -1);
+
+				cmbDesc.Items.Add(item);
+				cmbSourceResxLng.Items.Add(item);
+				lstResxLanguages.Items.Add(item.Key, item.Value, -1);
+
+				if (item.Key == defaultLangugae)
+				{
+					cmbSrc.SelectedIndex = index;
+					cmbSourceResxLng.SelectedIndex = cmbDesc.SelectedIndex = index-1;
+
+					cmbDesc.Text = cmbDesc.Text = item.Value;
+				}
+
 			}
-			cmbSrc.SelectedIndex = 0;
-			cmbDesc.Text = "English";
+			
 		}
 
 		void SetResult(string result)
@@ -200,22 +212,16 @@ namespace AutoResxTranslator
 		{
 			string errors = "";
 
-			if (!File.Exists(txtSourceResx.Text))
+			if (!File.Exists(txtSourceResx.Text) 
+				&& !subDirectoriesIncluded.Checked)
 				errors += "Please select source ResX file.\n";
 			if (cmbSourceResxLng.SelectedIndex == -1)
 				errors += "Please select source ResX file's language.\n";
 			if (!Directory.Exists(txtOutputDir.Text))
 				errors += "Please select output directory.\n";
 
-			bool anychecked = false;
-			foreach (ListViewItem item in lstResxLanguages.Items)
-			{
-				if (item.Checked)
-				{
-					anychecked = true;
-					break;
-				}
-			}
+			bool anychecked = lstResxLanguages.Items.Cast<ListViewItem>().Any(i => i.Checked);
+
 			if (!anychecked)
 			{
 				errors += "At least one output language should be selected.\n";
@@ -230,7 +236,7 @@ namespace AutoResxTranslator
 		}
 
 
-		void TranslateResxFiles()
+		void TranslateResxFiles(string fileName)
 		{
 			var srcLng = ((KeyValuePair<string, string>)cmbSourceResxLng.SelectedItem).Key;
 			var destLanguages = new List<string>();
@@ -257,8 +263,8 @@ namespace AutoResxTranslator
 			};
 
 			IsBusy(true);
-			new Action<string, string, TranslationOptions, List<string>, string, ResxProgressCallback>(TranslateResxFilesAsync).BeginInvoke(
-				txtSourceResx.Text,
+			new Action<string, string, TranslationOptions, List<string>, string, ResxProgressCallback>(TranslateMultiSourceResxFilesAsync).BeginInvoke(
+				fileName,
 				srcLng,
 				translationOptions,
 				destLanguages,
@@ -268,14 +274,54 @@ namespace AutoResxTranslator
 				null);
 		}
 
-		private delegate void ResxProgressCallback(int max, int pos, string status);
+		private delegate void ResxProgressCallback(int max, int pos, string fileName, string status);
 
-		async void TranslateResxFilesAsync(
+		void TranslateMultiSourceResxFilesAsync(
 			string sourceResx,
 			string sourceLng,
 			TranslationOptions translationOptions,
 			List<string> desLanguages, string destDir,
 			ResxProgressCallback progress)
+		{
+			int max = 0;
+			int pos = 0;
+			string status = "";
+			if (subDirectoriesIncluded.Checked)
+			{
+				var searchOption = subDirectoriesIncluded.Checked ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+				var srcLngForFile = "." + sourceLng + ".resx";
+				List<string> files = Directory.GetFiles(destDir, "*.*", searchOption)
+					.Where(x => x.Contains(srcLngForFile))
+					.ToList();
+				max = files.Count;
+				if (max < 1)
+				{
+					status = "No files found from path: " + destDir;
+					progress.BeginInvoke(max, pos, null, status, null, null);
+				}
+				foreach (var file in files)
+				{
+					string fileName = Path.GetFileName(file);
+					status = "Translating file: " + fileName;
+					pos += 1;
+					progress.BeginInvoke(max, pos, status, fileName, null, null);
+					var targetDir = Path.GetDirectoryName(file);
+					TranslateResxFilesAsync(file, sourceLng, translationOptions, desLanguages, targetDir, progress);
+				}
+			}
+			else
+			{
+				TranslateResxFilesAsync(sourceResx, sourceLng, translationOptions, desLanguages, destDir, progress);
+			}
+
+		}
+
+		void TranslateResxFilesAsync(
+		string sourceResx,
+		string sourceLng,
+		TranslationOptions translationOptions,
+		List<string> desLanguages, string destDir,
+		ResxProgressCallback progress)
 		{
 			int max = 0;
 			int pos = 0;
@@ -289,15 +335,16 @@ namespace AutoResxTranslator
 
 			foreach (var destLng in desLanguages)
 			{
+				var fileName = Path.GetFileName(sourceResx);
 				var destFile = Path.Combine(destDir, sourceResxFilename + "." + destLng + ".resx");
 				var doc = new XmlDocument();
 				doc.Load(sourceResx);
-				var dataList = ResxTranslator.ReadResxData(doc);
+				var dataList = ResxFileOperations.ReadResxData(doc);
 				max = dataList.Count;
 
 				pos = 0;
 				status = "Translating language: " + destLng;
-				progress.BeginInvoke(max, pos, status, null, null);
+				progress.BeginInvoke(max, pos, fileName, status, null, null);
 
 				try
 				{
@@ -306,10 +353,10 @@ namespace AutoResxTranslator
 					{
 						status = "Translating language: " + destLng;
 						pos += 1;
-						progress.BeginInvoke(max, pos, status, null, null);
+						progress.BeginInvoke(max, pos, fileName, status, null, null);
 
 
-						var valueNode = ResxTranslator.GetDataValueNode(node);
+						var valueNode = ResxFileOperations.GetDataValueNode(node);
 						if (valueNode == null) continue;
 
 						var orgText = valueNode.InnerText;
@@ -326,27 +373,32 @@ namespace AutoResxTranslator
 							string translated = string.Empty;
 							bool success = false;
 							trycount = 0;
+							int maxtryCount = 2;
 							do
 							{
 								try
 								{
-
-									success = GTranslateService.Translate(orgText, sourceLng, destLng, textTranslatorUrlKey, out translated);
+									success = GTranslateServiceV2.Translate(orgText, sourceLng, destLng, textTranslatorUrlKey, out translated);
 								}
-								catch (Exception)
+								catch (Exception e)
 								{
+									Console.WriteLine("error:", e);
+									status = "Error: " + e.Message;
+									progress.BeginInvoke(max, pos, fileName, status, null, null);
 									success = false;
+									trycount = maxtryCount;
+									throw;
 								}
 								trycount++;
 
 								if (!success)
 								{
-									var key = ResxTranslator.GetDataKeyName(node);
+									var key = ResxFileOperations.GetDataKeyName(node);
 									status = "Translating language: " + destLng + " , key '" + key + "' failed to translate in try " + trycount;
-									progress.BeginInvoke(max, pos, status, null, null);
+									progress.BeginInvoke(max, pos, fileName, status, null, null);
 								}
 
-							} while (success == false && trycount <= 2);
+							} while (success == false && trycount <= maxtryCount);
 
 							if (success)
 							{
@@ -355,7 +407,7 @@ namespace AutoResxTranslator
 							else
 							{
 								hasErrors = true;
-								var key = ResxTranslator.GetDataKeyName(node);
+								var key = ResxFileOperations.GetDataKeyName(node);
 								try
 								{
 									string message = "\r\nKey '" + key + "' translation to language '" + destLng + "' failed.";
@@ -368,8 +420,8 @@ namespace AutoResxTranslator
 						}
 						else if (translationOptions.ServiceType == ServiceTypeEnum.Microsoft)
 						{
-							var translationResult = await MsTranslateService.TranslateAsync(orgText, sourceLng, destLng,
-								translationOptions.MsSubscriptionKey, translationOptions.MsSubscriptionRegion);
+							var translationResult = MsTranslateService.TranslateAsync(orgText, sourceLng, destLng,
+								translationOptions.MsSubscriptionKey, translationOptions.MsSubscriptionRegion).Result;
 
 							if (translationResult.Success)
 							{
@@ -378,7 +430,7 @@ namespace AutoResxTranslator
 							else
 							{
 								hasErrors = true;
-								var key = ResxTranslator.GetDataKeyName(node);
+								var key = ResxFileOperations.GetDataKeyName(node);
 								try
 								{
 									string message = "\r\nKey '" + key + "' translation to language '" + destLng + "' failed. ";
@@ -409,15 +461,15 @@ namespace AutoResxTranslator
 			}
 
 
-			progress.BeginInvoke(max, pos, status, null, null);
+			progress.BeginInvoke(max, pos, null, status, null, null);
 
 		}
 
-		void ResxWorkingProgress(int max, int pos, string status)
+		void ResxWorkingProgress(int max, int pos, string fileName, string status)
 		{
 			if (this.InvokeRequired)
 			{
-				this.BeginInvoke(new ResxProgressCallback(ResxWorkingProgress), max, pos, status);
+				this.BeginInvoke(new ResxProgressCallback(ResxWorkingProgress), max, pos, fileName, status);
 				return;
 			}
 			else
@@ -425,7 +477,7 @@ namespace AutoResxTranslator
 				barResxProgress.Minimum = 0;
 				barResxProgress.Maximum = max;
 				barResxProgress.Value = pos;
-				lblResxTranslateStatus.Text = $"Processing {max:00}/{pos:00}, " + status;
+				lblResxTranslateStatus.Text = $"{fileName}, processing {max:00}/{pos:00}:" + status;
 			}
 		}
 
@@ -456,19 +508,19 @@ namespace AutoResxTranslator
 		{
 			var doc = new XmlDocument();
 			doc.Load(resxFile);
-			var dataList = ResxTranslator.ReadResxData(doc);
+			var dataList = ResxFileOperations.ReadResxData(doc);
 
 			var excelLanguages = ResxExcel.ReadExcelLanguage(excelFile, sheetName, sheetKeyColumn, sheetTranslation);
 			foreach (var lngPair in excelLanguages)
 			{
-				var node = dataList.FirstOrDefault(x => ResxTranslator.GetDataKeyName(x) == lngPair.Key);
+				var node = dataList.FirstOrDefault(x => ResxFileOperations.GetDataKeyName(x) == lngPair.Key);
 				if (node != null)
 				{
-					ResxTranslator.SetDataValue(doc, node, lngPair.Value);
+					ResxFileOperations.SetDataValue(doc, node, lngPair.Value);
 				}
 				else
 				{
-					ResxTranslator.AddLanguageNode(doc, lngPair.Key, lngPair.Value);
+					ResxFileOperations.AddLanguageNode(doc, lngPair.Key, lngPair.Value);
 				}
 			}
 			doc.PreserveWhitespace = false;
@@ -602,6 +654,33 @@ namespace AutoResxTranslator
 
 		private void btnStartResxTranslate_Click(object sender, EventArgs e)
 		{
+			translateAFile(txtSourceResx.Text);
+			//if (string.IsNullOrEmpty(txtSourceResx.Text) 
+			//	&& !string.IsNullOrEmpty(sourceDir.Text)
+			//	&& cmbSourceResxLng.SelectedIndex != -1
+			//	)
+			//{
+			//	var srcLng = "." + ((KeyValuePair<string, string>)cmbSourceResxLng.SelectedItem).Key + ".";
+			//	List<string> files = Directory.GetFiles(sourceDir.Text).Where(x => x.Contains(srcLng)).ToList();
+			//	foreach(var file in files)
+			//	{
+			//		txtSourceResx.Text = file;
+			//		translateAFile(file);
+			//		while (!tabMain.Enabled)
+			//		{
+			//			if (!tabMain.Enabled)
+			//				Thread.Sleep(1000);
+			//		}
+			//	}
+			//}
+			//else
+			//{
+			//	translateAFile(txtSourceResx.Text);
+			//}
+		}
+
+		private void translateAFile(string fileNmae)
+		{
 			if (!ValidateResxTranslate())
 				return;
 			if (!IsGoogleTranslatorLoaded())
@@ -609,8 +688,7 @@ namespace AutoResxTranslator
 				MessageBox.Show("Google Translator is not loaded.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return;
 			}
-
-			TranslateResxFiles();
+			TranslateResxFiles(fileNmae);
 		}
 
 		private void lnkAbout_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -733,6 +811,18 @@ namespace AutoResxTranslator
 		{
 			txtMsTranslationKey.Enabled = rbtnMsTranslateService.Checked;
 			txtMsTranslationRegion.Enabled = rbtnMsTranslateService.Checked;
+			googleApiKey.Enabled = !rbtnMsTranslateService.Checked;
+		}
+
+		private void subDirectoriesIncluded_Click(object sender, EventArgs e)
+		{
+			btnSelectResxSource.Enabled = !subDirectoriesIncluded.Checked;
+			txtSourceResx.Enabled = !subDirectoriesIncluded.Checked;
+		}
+
+		private void googleApiKey_TextChanged(object sender, EventArgs e)
+		{
+			GTranslateServiceV2.GoogleApiKey = googleApiKey.Text;
 		}
 	}
 }

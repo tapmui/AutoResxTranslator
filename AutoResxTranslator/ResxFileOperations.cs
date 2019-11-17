@@ -10,7 +10,7 @@ using System.Xml;
  */
 namespace AutoResxTranslator
 {
-	public static class ResxTranslator
+	public static class ResxFileOperations
 	{
 		public static List<XmlNode> ReadResxData(XmlDocument doc)
 		{
