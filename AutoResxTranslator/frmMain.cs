@@ -306,7 +306,8 @@ namespace AutoResxTranslator
 					pos += 1;
 					progress.BeginInvoke(max, pos, status, fileName, null, null);
 					var targetDir = Path.GetDirectoryName(file);
-					TranslateResxFilesAsync(file, sourceLng, translationOptions, desLanguages, targetDir, progress);
+					// TranslateResxFilesAsync(file, sourceLng, translationOptions, desLanguages, targetDir, progress);
+					TranslateResxFilesListAsync(file, sourceLng, translationOptions, desLanguages, targetDir, progress);
 				}
 			}
 			else
@@ -463,6 +464,99 @@ namespace AutoResxTranslator
 
 			progress.BeginInvoke(max, pos, null, status, null, null);
 
+		}
+
+		void TranslateResxFilesListAsync(
+			string sourceResx,
+			string sourceLng,
+			TranslationOptions translationOptions,
+			List<string> desLanguages, string destDir,
+			ResxProgressCallback progress)
+		{
+			int max = 0;
+			int pos = 0;
+			int trycount = 0;
+			string status = "";
+			bool hasErrors = false;
+
+			var sourceResxFilename = ReadLanguageFilename(sourceResx);
+			var errorLogFilename = sourceResxFilename + ".errors.log";
+			var errorLogFile = Path.Combine(destDir, errorLogFilename);
+
+			var valuesToTranslate = getOriginalTranslationTexts(sourceResx);
+
+			foreach (var destLng in desLanguages)
+			{
+				var fileName = Path.GetFileName(sourceResx);
+				var destFile = Path.Combine(destDir, sourceResxFilename + "." + destLng + ".resx");
+				var doc = new XmlDocument();
+				doc.Load(sourceResx);
+				var dataList = ResxFileOperations.ReadResxData(doc);
+				max = dataList.Count;
+
+				var values = valuesToTranslate.Select(x => x.Value).ToList();
+				var translations = GTranslateServiceV2.TranslateList(values, sourceLng, destLng).ToList();
+
+				pos = 0;
+				status = "Translating language: " + destLng;
+				progress.BeginInvoke(max, pos, fileName, status, null, null);
+
+				try
+				{
+					for (var index = 0; index < dataList.Count; index++)
+					{
+						var node = dataList[index];
+						status = "Translating language: " + destLng;
+						pos += 1;
+						progress.BeginInvoke(max, pos, fileName, status, null, null);
+
+						var valueNode = ResxFileOperations.GetDataValueNode(node);
+						if (valueNode == null) continue;
+
+						var orgText = valueNode.InnerText;
+						if (string.IsNullOrWhiteSpace(orgText))
+							continue;
+
+						valueNode.InnerText = translations[index].TranslatedText;
+					}
+				}
+				finally
+				{
+					// now save that shit!
+					doc.Save(destFile);
+				}
+			}
+
+			if (hasErrors)
+			{
+				status = "Translation finished. Errors are logged in to '" + errorLogFilename + "'.";
+			}
+			else
+			{
+				status = "Translation finished.";
+			}
+			progress.BeginInvoke(max, pos, null, status, null, null);
+		}
+
+		private static List<KeyValuePair<string, string>> getOriginalTranslationTexts(string sourceResx)
+		{
+			var doc = new XmlDocument();
+			doc.Load(sourceResx);
+			var dataList = ResxFileOperations.ReadResxData(doc);
+			var translations = new List<KeyValuePair<string, string>>();
+			foreach (var node in dataList)
+			{
+				var key = ResxFileOperations.GetDataKeyName(node);
+				var valueNode = ResxFileOperations.GetDataValueNode(node);
+				if (valueNode == null) continue;
+
+				var orgText = valueNode.InnerText;
+				if (string.IsNullOrWhiteSpace(orgText))
+					continue;
+
+				translations.Add(new KeyValuePair<string, string>(key, orgText));
+			}
+			return translations;
 		}
 
 		void ResxWorkingProgress(int max, int pos, string fileName, string status)

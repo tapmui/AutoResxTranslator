@@ -52,11 +52,10 @@ namespace AutoResxTranslator
 			return res.TranslatedText;
 		}
 
-		public static IEnumerable<TranslationResult> TranslateListAsync(
+		public static IEnumerable<TranslationResult> TranslateList(
 			List<string> texts,
 			string sourceLng,
-			string destLng,
-			string textTranslatorUrlKey
+			string destLng
 			)
 		{
 			validateApiKey();
