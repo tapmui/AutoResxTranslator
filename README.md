@@ -1,5 +1,13 @@
 ## AutoResxTranslator
-A tool to automatically translate Resx files to any language using Google Translator. No API key is required for the translator. This tool also provides a text translator out of the box.
+A tool to automatically translate Resx files to any language using Google Translator. 
+Difference to origin is 
+- Google API key is required for the translator. This is get large amount of values to be translated without restrictions
+- values are translated as a list to speed up process
+- translation multiple resx files with single call, including sub-directories.
+
+Note that Microsoft translation is not supported in this version..
+
+This tool also provides a text translator out of the box.
 
 Text translation
 ------
