@@ -5,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 using AutoResxTranslator.Definitions;
+using AutoXmlTranslator;
 
 /* 
  * AutoResxTranslator
@@ -19,7 +21,6 @@ using AutoResxTranslator.Definitions;
 
 namespace AutoResxTranslator
 {
-	
 	public partial class frmMain : Form
 	{
 		public frmMain()
@@ -170,12 +171,12 @@ namespace AutoResxTranslator
 		}
 
 
-		string ReadLanguageName(string fileName)
+		string ReadLanguageName(string fileName, string fileEnding = ".resx")
 		{
 			try
 			{
 				fileName = Path.GetFileName(fileName);
-				var match = Regex.Match(fileName, @".+\.(?<lng>.+)\.resx");
+				var match = Regex.Match(fileName, @".+\.(?<lng>.+)\" + fileEnding);
 				var language = match.Groups["lng"].Value;
 				var culture = new CultureInfo(language);
 				return language;
@@ -257,9 +258,10 @@ namespace AutoResxTranslator
 			var translationOptions = new TranslationOptions
 			{
 				ServiceType = ServiceType,
-				MsSubscriptionKey = txtMsTranslationKey.Text,
+				SubscriptionKey = ServiceType == ServiceTypeEnum.Google ? googleApiKey.Text: txtMsTranslationKey.Text,
 				MsSubscriptionRegion = txtMsTranslationRegion.Text
 			};
+
 
 			IsBusy(true);
 			new Action<string, string, TranslationOptions, List<string>, string, ResxProgressCallback>(TranslateMultiSourceResxFilesAsync).BeginInvoke(
@@ -512,9 +514,10 @@ namespace AutoResxTranslator
 			var translationOptions = new TranslationOptions
 			{
 				ServiceType = ServiceType,
-				MsSubscriptionKey = txtMsTranslationKey.Text,
+				SubscriptionKey = ServiceType == ServiceTypeEnum.Google ? googleApiKey.Text : txtMsTranslationKey.Text,
 				MsSubscriptionRegion = txtMsTranslationRegion.Text
 			};
+
 
 
 			IsBusy(true);
@@ -534,7 +537,7 @@ namespace AutoResxTranslator
 			}
 			else
 			{
-				var translationResult = await MsTranslateService.TranslateAsync(text, lngSrc, lngDest, txtMsTranslationKey.Text, txtMsTranslationRegion.Text);
+				var translationResult = await MsTranslateService.TranslateAsync(text, lngSrc, lngDest, translationOptions.SubscriptionKey, txtMsTranslationRegion.Text);
 
 				if (translationResult.Success)
 				{
@@ -565,6 +568,33 @@ namespace AutoResxTranslator
 				}
 
 				var lng = ReadLanguageName(txtSourceResx.Text);
+				var key = _languages.FirstOrDefault(x => string.Compare(x.Key, lng, StringComparison.InvariantCultureIgnoreCase) == 0);
+				if (key.Key != null)
+					cmbSourceResxLng.SelectedItem = key;
+				else
+				{
+					lng = "en";
+					key = _languages.FirstOrDefault(x => string.Compare(x.Key, lng, StringComparison.InvariantCultureIgnoreCase) == 0);
+					if (key.Key != null)
+						cmbSourceResxLng.SelectedItem = key;
+				}
+			}
+		}
+
+		private void btnSelectXmlSource_Click(object sender, EventArgs e)
+		{
+			const string fileEnding = ".xml";
+			var dlg = new OpenFileDialog();
+			dlg.Filter = "Xml File|*" + fileEnding;
+			if (dlg.ShowDialog() == DialogResult.OK)
+			{
+				txtSourceResx.Text = dlg.FileName;
+				if (txtOutputDir.Text.Length == 0)
+				{
+					txtOutputDir.Text = Path.GetDirectoryName(txtSourceResx.Text);
+				}
+
+				var lng = ReadLanguageName(txtSourceResx.Text, fileEnding);
 				var key = _languages.FirstOrDefault(x => string.Compare(x.Key, lng, StringComparison.InvariantCultureIgnoreCase) == 0);
 				if (key.Key != null)
 					cmbSourceResxLng.SelectedItem = key;
@@ -733,7 +763,46 @@ namespace AutoResxTranslator
 			txtMsTranslationRegion.Enabled = rbtnMsTranslateService.Checked;
 			googleApiKey.Enabled = !rbtnMsTranslateService.Checked;
 		}
+		
+		private void label17_Click(object sender, EventArgs e)
+		{
 
+		}
+
+		private void tabMain_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			switch (tabMain.SelectedIndex)
+			{
+				case 0:
+					this.tabResx.Controls.Add(this.lstResxLanguages);
+					this.tabResx.Controls.Add(this.lblResxTranslateStatus);
+					this.tabResx.Controls.Add(this.btnStartResxTranslate);
+					this.tabResx.Controls.Add(this.barResxProgress);
+					this.tabResx.Controls.Add(this.label6);
+					this.tabResx.Controls.Add(this.btnSelectOutputDir);
+					this.tabResx.Controls.Add(this.txtOutputDir);
+					this.tabResx.Controls.Add(this.label5);
+					this.tabResx.Controls.Add(this.btnSelectResxSource);
+					this.tabResx.Controls.Add(this.cmbSourceResxLng);
+					this.tabResx.Controls.Add(this.txtSourceResx);
+					this.tabResx.Controls.Add(this.label4);
+					break;
+				case 1:
+					this.tabXml.Controls.Add(this.lstResxLanguages);
+					this.tabXml.Controls.Add(this.lblResxTranslateStatus);
+					this.tabXml.Controls.Add(this.btnStartXmlTranlate);
+					this.tabXml.Controls.Add(this.barResxProgress);
+					this.tabXml.Controls.Add(this.label15);
+					this.tabXml.Controls.Add(this.btnSelectOutputDir);
+					this.tabXml.Controls.Add(this.txtOutputDir);
+					this.tabXml.Controls.Add(this.label16);
+					this.tabXml.Controls.Add(this.btnSelectXmlSource);
+					this.tabXml.Controls.Add(this.cmbSourceResxLng);
+					this.tabXml.Controls.Add(this.txtSourceResx);
+					this.tabXml.Controls.Add(this.label17);
+					break;
+			}
+		}
 		private void subDirectoriesIncluded_Click(object sender, EventArgs e)
 		{
 			btnSelectResxSource.Enabled = !subDirectoriesIncluded.Checked;
@@ -743,6 +812,227 @@ namespace AutoResxTranslator
 		private void googleApiKey_TextChanged(object sender, EventArgs e)
 		{
 			GTranslateServiceV2.GoogleApiKey = googleApiKey.Text;
+		}
+
+		private void btnStartXmlTranlate_Click(object sender, EventArgs e)
+		{
+			if (!ValidateXmlTranslate())
+				return;
+			if (!IsGoogleTranslatorLoaded())
+			{
+				MessageBox.Show("Google Translator is not loaded.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return;
+			}
+
+			TranslateXmlFiles();
+		}
+
+		bool ValidateXmlTranslate()
+		{
+			string errors = "";
+
+			if (!File.Exists(txtSourceResx.Text))
+				errors += "Please select source XML file.\n";
+			if (cmbSourceResxLng.SelectedIndex == -1)
+				errors += "Please select source XML file's language.\n";
+			if (!Directory.Exists(txtOutputDir.Text))
+				errors += "Please select output directory.\n";
+
+			bool anychecked = false;
+			foreach (ListViewItem item in lstResxLanguages.Items)
+			{
+				if (item.Checked)
+				{
+					anychecked = true;
+					break;
+				}
+			}
+			if (!anychecked)
+			{
+				errors += "At least one output language should be selected.\n";
+			}
+
+			if (errors.Length > 0)
+			{
+				MessageBox.Show(errors, "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return false;
+			}
+			return true;
+		}
+		void TranslateXmlFiles()
+		{
+			var srcLng = ((KeyValuePair<string, string>)cmbSourceResxLng.SelectedItem).Key;
+			var destLanguages = new List<string>();
+			foreach (ListViewItem item in lstResxLanguages.Items)
+			{
+				if (!item.Checked)
+					continue;
+				if (item.Name == srcLng)
+					continue;
+				destLanguages.Add(item.Name);
+			}
+			if (destLanguages.Count == 0)
+			{
+				MessageBox.Show("The source and the destination languages can not be the same.", "", MessageBoxButtons.OK,
+					MessageBoxIcon.Error);
+				return;
+			}
+
+			var translationOptions = new TranslationOptions
+			{
+				ServiceType = ServiceType,
+				SubscriptionKey = ServiceType == ServiceTypeEnum.Google ? googleApiKey.Text : txtMsTranslationKey.Text,
+				MsSubscriptionRegion = txtMsTranslationRegion.Text
+			};
+
+			IsBusy(true);
+			new Action<string, string, TranslationOptions, List<string>, string,
+				ResxProgressCallback>(TranslateXmlFilesAsync).BeginInvoke(
+				txtSourceResx.Text,
+				srcLng,
+				translationOptions,
+				destLanguages,
+				txtOutputDir.Text,
+				ResxWorkingProgress,
+				(x) => IsBusy(false),
+				null);
+		}
+
+		async void TranslateXmlFilesAsync(
+		string sourceResx,
+		string sourceLng,
+		TranslationOptions translationOptions,
+		List<string> desLanguages, string destDir,
+		ResxProgressCallback progress)
+		{
+			int max = 0;
+			int pos = 0;
+			int trycount = 0;
+			string status = "";
+			bool hasErrors = false;
+
+			var sourceXmlFilename = ReadLanguageFilename(sourceResx);
+			var errorLogFilename = sourceXmlFilename + ".errors.log";
+			var errorLogFile = Path.Combine(destDir, errorLogFilename);
+
+			foreach (var destLng in desLanguages)
+			{
+				var destFile = Path.Combine(destDir, sourceXmlFilename + "-" + destLng + ".xml");
+				var doc = new XmlDocument();
+				doc.Load(sourceResx);
+				List<XmlNode> dataListTarget = null;
+				if (File.Exists(destFile))
+				{
+					var docTarget = new XmlDocument();
+					docTarget.Load(destFile);
+					dataListTarget = XmlTranslator.ReadXmlData(docTarget);
+				}
+
+				XmlTranslator.SetCulture(doc, destLng);
+				var dataList = XmlTranslator.ReadXmlData(doc);
+				
+				max = dataList.Count;
+
+				pos = 0;
+				status = "Translating language: " + destLng;
+				progress.BeginInvoke(max, pos, status, null, null, null);
+				GTranslateServiceV3 googleTranslator = new GTranslateServiceV3(translationOptions.SubscriptionKey);
+				
+				try
+				{
+
+					foreach (var node in dataList)
+					{
+						status = "Translating language: " + destLng;
+						pos += 1;
+						progress.BeginInvoke(max, pos, status, null, null, null);
+
+
+						var valueNode = node;
+						if (valueNode == null) continue;
+
+						var orgText = XmlTranslator.GetDataValue(valueNode, dataListTarget, out bool asInnerText, out bool alreadyTranslated);
+						if (string.IsNullOrWhiteSpace(orgText))
+							continue;
+
+						string translated = alreadyTranslated ? orgText: string.Empty;
+						bool success = alreadyTranslated;
+
+						if (!alreadyTranslated && translationOptions.ServiceType == ServiceTypeEnum.Google)
+						{
+							trycount = 0;
+							do
+							{
+								try
+								{
+									success = googleTranslator.Translate(orgText, sourceLng, destLng, translationOptions.SubscriptionKey, out translated);
+								}
+								catch (Exception)
+								{
+									success = false;
+								}
+								trycount++;
+
+								if (!success)
+								{
+									var key = XmlTranslator.GetDataKeyName(node);
+									status = "Translating language: " + destLng + " , key '" + key + "' failed to translate in try " + trycount;
+									progress.BeginInvoke(max, pos, status, null, null, null);
+								}
+
+							} while (success == false && trycount <= 2);
+
+						}
+						else if (!alreadyTranslated &&  translationOptions.ServiceType == ServiceTypeEnum.Microsoft)
+						{
+							var translationResult = await MsTranslateService.TranslateAsync(orgText, sourceLng, destLng,
+								translationOptions.SubscriptionKey, translationOptions.MsSubscriptionRegion);
+
+							if (translationResult.Success)
+							{
+								success = true;
+								translated = translationResult.Result;
+							}
+						}
+
+						if (success)
+						{
+							XmlTranslator.SetDataValue(doc, valueNode, translated, asInnerText);
+						}
+						else
+						{
+							hasErrors = true;
+							var key = XmlTranslator.GetDataKeyName(node);
+							try
+							{
+								string message = "\r\nKey '" + key + "' translation to language '" + destLng + "' failed.";
+								File.AppendAllText(errorLogFile, message);
+							}
+							catch
+							{
+							}
+						}
+					}
+				}
+				finally
+				{
+					// now save the file
+					doc.Save(destFile);
+				}
+			}
+
+			if (hasErrors)
+			{
+				status = "Translation finished. Errors are logged in to '" + errorLogFilename + "'.";
+			}
+			else
+			{
+				status = "Translation finished.";
+			}
+
+
+			progress.BeginInvoke(max, pos, status, null, null, null);
+
 		}
 	}
 }

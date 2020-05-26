@@ -10,7 +10,7 @@ namespace AutoResxTranslator.Definitions
 	{
 		public ServiceTypeEnum ServiceType { get; set; }
 
-		public string MsSubscriptionKey { get; set; }
+		public string SubscriptionKey { get; set; }
 
 		public string MsSubscriptionRegion { get; set; }
 	}
